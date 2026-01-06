@@ -65,3 +65,10 @@ cloudinary_cache/
 # =========================
 *.pem
 *.key
+# Static files
+/staticfiles/
+/media/
+
+# But keep the empty directories
+!staticfiles/.gitkeep
+!media/.gitkeep
