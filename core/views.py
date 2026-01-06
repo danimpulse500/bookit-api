@@ -27,16 +27,18 @@ class CustomRegisterView(RegisterView):
         }
     )
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        if response.status_code == 201:
-            user = response.data
-            refresh = RefreshToken.for_user(user)
-            response.data = {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-                'user': user
-            }
-        return response
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save(request)  
+
+        refresh = RefreshToken.for_user(user)
+        data = {
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user, context={'request': request}).data
+        }
+
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class ListingListCreateView(generics.ListCreateAPIView):
