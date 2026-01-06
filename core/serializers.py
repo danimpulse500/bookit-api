@@ -37,14 +37,20 @@ class UserRegistrationSerializer(RegisterSerializer):
 
 
 class ListingImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()  # Fix: return full URL
+
     class Meta:
         model = ListingImage
         fields = ['id', 'image', 'uploaded_at']
         read_only_fields = ['id', 'uploaded_at']
 
+    def get_image(self, obj):
+        return obj.image.url if obj.image else None
+
 
 class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
+    cover_image_url = serializers.SerializerMethodField()  # Added cover_image URL
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(), write_only=True, required=False
     )
@@ -53,10 +59,13 @@ class ListingSerializer(serializers.ModelSerializer):
         model = Listing
         fields = [
             'id', 'title', 'description', 'price', 'location',
-            'bedrooms', 'bathrooms', 'images', 'uploaded_images', 'created_by',
-            'created_at', 'updated_at'
+            'bedrooms', 'bathrooms', 'cover_image_url', 'images', 'uploaded_images', 
+            'created_by', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
+
+    def get_cover_image_url(self, obj):
+        return obj.cover_image.url if obj.cover_image else None
 
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
