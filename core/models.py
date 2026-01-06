@@ -64,6 +64,7 @@ class Listing(models.Model):
     location = models.CharField(max_length=255)
     bedrooms = models.PositiveIntegerField()
     bathrooms = models.PositiveIntegerField()
+    cover_image = CloudinaryField('image', blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='listings')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
