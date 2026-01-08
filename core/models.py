@@ -44,6 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=15)
     is_agent = models.BooleanField(default=False)
+    agency_name = models.CharField(max_length=255, blank=True, null=True)  # Added agency_name field
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -57,26 +58,142 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.full_name
 
-class Listing(models.Model):
-    title = models.CharField(max_length=255)
-    description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    location = models.CharField(max_length=255)
-    bedrooms = models.PositiveIntegerField()
-    bathrooms = models.PositiveIntegerField(blank=True, null=True)
-    cover_image = CloudinaryField('image', blank=True, null=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='listings')
+
+class Location(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     def __str__(self):
-        return self.title
+        return self.name
+    
+    class Meta:
+        ordering = ['name']
+
+
+class Listing(models.Model):
+    # Rename title to lodge_name (with db_column to preserve data)
+    lodge_name = models.CharField(max_length=255, db_column='title')
+    
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Change location to ForeignKey with Location model
+    location = models.ForeignKey(
+        Location, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='listings'
+    )
+    old_location = models.CharField(max_length=255, blank=True, null=True)  # Temporary field for migration
+    
+    # Room type choices
+    ROOM_TYPE_CHOICES = [
+        ('SELF_CONTAINED', 'Self Contained'),
+        ('ONE_BEDROOM', 'One Bedroom'),
+        ('TWO_BEDROOM', 'Two Bedroom'),
+        ('STUDIO', 'Studio'),
+        ('SHARED_ROOM', 'Shared Room'),
+        ('SINGLE_ROOM', 'Single Room'),
+        ('OTHER', 'Other'),
+    ]
+    
+    room_type = models.CharField(
+        max_length=50, 
+        choices=ROOM_TYPE_CHOICES, 
+        default='SELF_CONTAINED'
+    )
+    
+    # Amenities (store as JSON)
+    amenities = models.JSONField(default=list, blank=True, null=True)
+    
+    # Room numbers
+    total_rooms = models.PositiveIntegerField(default=1, help_text="Total number of rooms in the property")
+    # available_rooms = models.PositiveIntegerField(default=1, help_text="Number of rooms available")
+    
+    # Remove bedrooms, add room_number
+    # bedrooms = models.PositiveIntegerField(blank=True, null=True)  # Keep for migration, will remove later
+    room_number = models.CharField(max_length=50, blank=True, null=True, help_text="Room/Unit number")
+    
+    # Keep bathrooms for now, can phase out later
+    # bathrooms = models.PositiveIntegerField(blank=True, null=True)
+    
+    # Video field (Cloudinary supports videos too)
+    video = CloudinaryField('video', blank=True, null=True, resource_type='video')
+    
+    # REMOVED: cover_image - Use first image from ListingImage instead
+    # Agent and agency information
+    agent = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='listings',
+        limit_choices_to={'is_agent': True}  # Only agents can create listings
+    )
+    agency = models.CharField(max_length=255, blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Additional useful fields
+    is_available = models.BooleanField(default=True)
+    rules = models.TextField(blank=True, null=True)
+    contact_phone = models.CharField(max_length=20, blank=True, null=True)
+    contact_email = models.EmailField(blank=True, null=True)
+    
+    def __str__(self):
+        return self.lodge_name
+    
+    @property
+    def cover_image_url(self):
+        """Get the URL of the first image as cover image"""
+        first_image = self.images.first()
+        if first_image:
+            return first_image.image.url
+        return None
+    
+    @property
+    def cover_image(self):
+        """Backward compatibility property"""
+        return self.cover_image_url
+    
+    def save(self, *args, **kwargs):
+        # Auto-populate agency from agent if not provided
+        if not self.agency and self.agent and self.agent.agency_name:
+            self.agency = self.agent.agency_name
+            
+        # Copy old location data if needed during migration
+        if self.old_location and not self.location:
+            # Try to find or create location from old_location
+            location_obj, created = Location.objects.get_or_create(
+                name=self.old_location,
+                defaults={'description': f'Migrated from old location field'}
+            )
+            self.location = location_obj
+            
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        ordering = ['-created_at']
+        db_table = 'core_listing'  # Keep original table name
 
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')
     image = CloudinaryField('image')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_primary = models.BooleanField(default=False, help_text="Mark as primary/cover image")
 
     def __str__(self):
-        return f"Image for {self.listing.title}"
+        return f"Image for {self.listing.lodge_name}"
+    
+    def save(self, *args, **kwargs):
+        # If this is marked as primary, unmark other primary images for this listing
+        if self.is_primary:
+            ListingImage.objects.filter(listing=self.listing, is_primary=True).update(is_primary=False)
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        ordering = ['-is_primary', 'uploaded_at']

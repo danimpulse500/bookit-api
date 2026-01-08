@@ -167,25 +167,76 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'core.serializers.UserRegistrationSerializer',
+}
+
+
+ACCOUNT_ADAPTER = 'core.adapters.CustomAccountAdapter'
+
+
+
 # Allauth settings
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_VERIFICATION = 'none' 
-# DJ Rest Auth settings
-REST_USE_JWT = True
+
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+    # EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+    # EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+    # EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+    # EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+    # DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
+
+
+# CRITICAL FIX: Add ACCOUNT_SIGNUP_FIELDS when using mandatory email verification
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1', 'password2']
+
+# Allauth Email Verification Settings
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # This is correct
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True  # Confirm email when user clicks link
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3  # Link expires in 3 days
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '[BookIt] '  # Email subject prefix
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False  # Auto login after confirmation
+REST_AUTH_REGISTER_RETURN_TOKENS = False
+
+
+# Email confirmation URL (frontend URL)
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5500')
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = f'{FRONTEND_URL}/email-verified/'
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = f'{FRONTEND_URL}/email-verified/'
+
+# Dj-rest-auth settings to enforce email verification
 REST_AUTH = {
     'USE_JWT': True,
     'JWT_AUTH_HTTPONLY': False,
+    'JWT_AUTH_RETURN_EXPIRATION': True,
     'REGISTER_SERIALIZER': 'core.serializers.UserRegistrationSerializer',
     'USER_DETAILS_SERIALIZER': 'core.serializers.UserSerializer',
+    'TOKEN_MODEL': None,
+    
+    # CRITICAL: These settings enable email verification
+    'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
+    'REGISTER_SERIALIZER_CUSTOM_FIELDS': {
+        'email': 'email',
+        'password1': 'password1', 
+        'password2': 'password2',
+    },
+    
+    # Email verification settings
+    'OLD_PASSWORD_FIELD_ENABLED': True,
+    'LOGOUT_ON_PASSWORD_CHANGE': False,
+    'SESSION_LOGIN': False,
 }
 
+# If you want to prevent login until email is verified
+ACCOUNT_AUTHENTICATED_METHODS = ['email']  # Only email authentication
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
