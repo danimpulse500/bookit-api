@@ -1,7 +1,12 @@
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from .models import User, Listing, ListingImage
-
+from rest_framework import serializers
+from allauth.account import app_settings as allauth_settings
+from allauth.account.adapter import get_adapter
+from allauth.account.utils import setup_user_email
+from django.db import IntegrityError
+from django.core.exceptions import ValidationError
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,9 +24,23 @@ class UserRegistrationSerializer(RegisterSerializer):
     class Meta:
         fields = ('email', 'password1', 'password2', 'full_name', 'phone_number', 'is_agent')
 
+    def validate_email(self, email):
+        email = get_adapter().clean_email(email)
+        
+        # CRITICAL: Check if email already exists BEFORE trying to create user
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                "A user is already registered with this email address."
+            )
+        
+        return email
+
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
-        data['username'] = data.get('username') or data.get('email')  # Set username to email if not provided
+        data['username'] = data.get('username') or data.get('email')
         data['full_name'] = self.validated_data.get('full_name', '')
         data['phone_number'] = self.validated_data.get('phone_number', '')
         data['is_agent'] = self.validated_data.get('is_agent', False)
@@ -34,7 +53,6 @@ class UserRegistrationSerializer(RegisterSerializer):
         user.is_agent = self.cleaned_data.get('is_agent')
         user.save()
         return user
-
 
 class ListingImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()  # Fix: return full URL

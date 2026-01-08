@@ -63,7 +63,7 @@ class Listing(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     location = models.CharField(max_length=255)
     bedrooms = models.PositiveIntegerField()
-    bathrooms = models.PositiveIntegerField()
+    bathrooms = models.PositiveIntegerField(blank=True, null=True)
     cover_image = CloudinaryField('image', blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='listings')
     created_at = models.DateTimeField(auto_now_add=True)
