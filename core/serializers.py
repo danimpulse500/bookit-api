@@ -2,6 +2,55 @@ from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from .models import User, Listing, ListingImage, Location
 from allauth.account.adapter import get_adapter
+# Add to core/serializers.py
+from dj_rest_auth.serializers import LoginSerializer
+from django.contrib.auth import authenticate
+from django.utils.translation import gettext_lazy as _
+
+class CustomLoginSerializer(LoginSerializer):
+    username = None  # Remove username field
+    email = serializers.EmailField(required=True, allow_blank=False)
+    
+    def authenticate(self, **kwargs):
+        return authenticate(self.context['request'], **kwargs)
+    
+    def get_auth_user_using_allauth(self, username, email, password):
+        # Override to use email instead of username
+        from allauth.account import app_settings
+        from allauth.account.utils import filter_users_by_email
+        
+        User = get_user_model()
+        
+        if email:
+            users = filter_users_by_email(email)
+            if not users:
+                raise serializers.ValidationError(
+                    {'email': _('E-mail address is not verified.')}
+                )
+            user = users[0]
+            if user.check_password(password):
+                return user
+        return None
+    
+    def get_auth_user(self, username, email, password):
+        """
+        Retrieve the auth user via allauth or Django's auth.
+        Returns the authenticated user instance if credentials are correct,
+        else raises ValidationError.
+        """
+        from allauth.account import app_settings as allauth_settings
+        from allauth.account.utils import filter_users_by_email
+
+        # Authentication through email
+        if allauth_settings.AUTHENTICATION_METHOD == allauth_settings.AuthenticationMethod.EMAIL:
+            return self.get_auth_user_using_allauth(username, email, password)
+
+        # Authentication through username
+        if allauth_settings.AUTHENTICATION_METHOD == allauth_settings.AuthenticationMethod.USERNAME:
+            return self.get_auth_user_using_allauth(username, email, password)
+
+        # Authentication through either username or email
+        return self.get_auth_user_using_allauth(username, email, password)
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,7 +81,7 @@ class UserRegistrationSerializer(RegisterSerializer):
 
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
-        data['username'] = data.get('username') or data.get('email')
+        data['username'] =  data.get('email')
         data['full_name'] = self.validated_data.get('full_name', '')
         data['phone_number'] = self.validated_data.get('phone_number', '')
         data['is_agent'] = self.validated_data.get('is_agent', False)

@@ -15,17 +15,13 @@ from pathlib import Path
 import environ
 import dj_database_url
 import cloudinary
+import datetime
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize environment variables
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / '.env')
-
-
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -40,7 +36,6 @@ if DEBUG:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 else:
     ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['bookit-api-tpvz.onrender.com'])
-
 
 # Application definition
 
@@ -67,9 +62,7 @@ INSTALLED_APPS = [
     'core',
 ]
 
-
 SITE_ID = 1
-
 AUTH_USER_MODEL = 'core.User'
 
 MIDDLEWARE = [
@@ -104,21 +97,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-import dj_database_url
 
 if DEBUG:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-              'NAME': BASE_DIR / 'db.sqlite3',
-                'OPTIONS': {
-                    'timeout': 20,  # seconds
-                }
-            
+            'NAME': BASE_DIR / 'db.sqlite3',
+            'OPTIONS': {
+                'timeout': 20,  # seconds
+            }
         }
     }
 else:
@@ -126,38 +115,22 @@ else:
         'default': dj_database_url.config(default=env('DATABASE_URL'))
     }
 
-
-REST_USE_JWT = True
-REST_AUTH = {
-    'USE_JWT': True,
-    'JWT_AUTH_HTTPONLY': False,
-    'JWT_AUTH_RETURN_EXPIRATION': True,
-    'REGISTER_SERIALIZER': 'core.serializers.UserRegistrationSerializer',
-    'USER_DETAILS_SERIALIZER': 'core.serializers.UserSerializer',
-    # Disable token authentication completely
-    'TOKEN_MODEL': None,
-}
-
-
 # REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
 }
-import datetime
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
-
 
 # Spectacular settings
 SPECTACULAR_SETTINGS = {
@@ -171,10 +144,7 @@ REST_AUTH_REGISTER_SERIALIZERS = {
     'REGISTER_SERIALIZER': 'core.serializers.UserRegistrationSerializer',
 }
 
-
 ACCOUNT_ADAPTER = 'core.adapters.CustomAccountAdapter'
-
-
 
 # Allauth settings
 AUTHENTICATION_BACKENDS = [
@@ -194,18 +164,23 @@ else:
     # EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
     # DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
 
-
 # CRITICAL FIX: Add ACCOUNT_SIGNUP_FIELDS when using mandatory email verification
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1', 'password2']
 
 # Allauth Email Verification Settings
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # This is correct
-ACCOUNT_CONFIRM_EMAIL_ON_GET = True  # Confirm email when user clicks link
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3  # Link expires in 3 days
-ACCOUNT_EMAIL_SUBJECT_PREFIX = '[BookIt] '  # Email subject prefix
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False  # Auto login after confirmation
-REST_AUTH_REGISTER_RETURN_TOKENS = False
+if DEBUG:
+    ACCOUNT_EMAIL_VERIFICATION = 'optional'
+else:
+    ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '[BookIt] '
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
 
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
 
 # Email confirmation URL (frontend URL)
 FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5500')
@@ -235,12 +210,7 @@ REST_AUTH = {
     'SESSION_LOGIN': False,
 }
 
-# If you want to prevent login until email is verified
-ACCOUNT_AUTHENTICATED_METHODS = ['email']  # Only email authentication
-
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -256,22 +226,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_FINDERS = [
@@ -283,10 +244,7 @@ if DEBUG:
     STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 
 # Cloudinary configuration
 if DEBUG:
@@ -298,8 +256,6 @@ else:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-
-# settings.py
-
+# CORS settings
 CORS_ALLOW_ALL_ORIGINS = True  
 CORS_ALLOW_CREDENTIALS = True
