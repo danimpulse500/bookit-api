@@ -1,11 +1,13 @@
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
-from .models import User, Listing, ListingImage, Location
+# Remove Location from imports
+from .models import User, Listing, ListingImage, AMENITY_CHOICES
 from allauth.account.adapter import get_adapter
 # Add to core/serializers.py
 from dj_rest_auth.serializers import LoginSerializer
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
 
 class CustomLoginSerializer(LoginSerializer):
     username = None  # Remove username field
@@ -97,11 +99,7 @@ class UserRegistrationSerializer(RegisterSerializer):
         user.save()
         return user
 
-class LocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Location
-        fields = ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+# LocationSerializer REMOVED
 
 class ListingImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -117,7 +115,13 @@ class ListingImageSerializer(serializers.ModelSerializer):
 class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
     cover_image_url = serializers.SerializerMethodField()
-    location_detail = LocationSerializer(source='location', read_only=True)
+    # location_detail REMOVED since location is now a choice field
+    # location_display to show the readable name of the choice
+    location_display = serializers.CharField(source='get_location_display', read_only=True)
+    
+    # Amenities as Multiple Choice Field
+    amenities = serializers.MultipleChoiceField(choices=AMENITY_CHOICES, required=False)
+
     agent_detail = UserSerializer(source='agent', read_only=True)
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(max_length=None, allow_empty_file=False), 
@@ -134,7 +138,7 @@ class ListingSerializer(serializers.ModelSerializer):
         model = Listing
         fields = [
             'id', 'lodge_name', 'description', 'price', 
-            'location', 'location_detail', 'old_location', 'room_type',
+            'location', 'location_display', 'old_location', 'room_type',
             'amenities', 'total_rooms', 
             'room_number', 'video', 'video_url',
             'agent', 'agent_detail', 'agency', 'created_at', 'updated_at',
@@ -143,10 +147,10 @@ class ListingSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'created_at', 'updated_at', 'cover_image_url',
-            'video_url', 'agent_detail', 'location_detail', 'old_location'
+            'video_url', 'agent_detail', 'location_display', 'old_location'
         ]
         extra_kwargs = {
-            'location': {'required': False},
+            'location': {'required': True}, # Location is now required and simple
             'agent': {'required': False},
             'video': {'required': False, 'allow_null': True},
         }
@@ -177,13 +181,6 @@ class ListingSerializer(serializers.ModelSerializer):
         if 'agent' in data and data['agent'] and not data.get('agency'):
             if hasattr(data['agent'], 'agency_name') and data['agent'].agency_name:
                 data['agency'] = data['agent'].agency_name
-        
-        # Validate room availability
-        # if 'total_rooms' in data and 'available_rooms' in data:
-        #     if data['available_rooms'] > data['total_rooms']:
-        #         raise serializers.ValidationError({
-        #             'available_rooms': 'Available rooms cannot exceed total rooms.'
-        #         })
         
         return data
 
@@ -234,8 +231,8 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         model = Listing
         fields = [
             'lodge_name', 'description', 'price', 'location',
-            'room_type', 'amenities', 'total_rooms', 'available_rooms',
-            'room_number', 'bedrooms', 'bathrooms', 'video',
+            'room_type', 'amenities', 'total_rooms', 
+            'room_number', 'video',
             'is_available', 'rules', 'contact_phone', 'contact_email',
             'uploaded_images'
         ]

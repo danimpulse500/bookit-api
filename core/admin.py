@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
-from .models import User, Listing, ListingImage, Location
+from .models import User, Listing, ListingImage
 
 class UserAdmin(BaseUserAdmin):
     ordering = ["email"]
@@ -36,20 +36,13 @@ class ListingImageInline(admin.TabularInline):
         return "No image"
     image_preview.short_description = "Preview"
 
-@admin.register(Location)
-class LocationAdmin(admin.ModelAdmin):
-    list_display = ['name', 'is_active', 'created_at', 'updated_at']
-    list_filter = ['is_active', 'created_at']
-    search_fields = ['name', 'description']
-    readonly_fields = ['created_at', 'updated_at']
-    list_editable = ['is_active']
-    ordering = ['name']
+# LocationAdmin REMOVED
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
     list_display = [
         'lodge_name', 'price', 'location_display', 'room_type_display', 
-         'is_available', 'agent_display', 'created_at'  # Added available_rooms back
+         'is_available', 'agent_display', 'created_at'
     ]
     list_filter = [
         'is_available', 'room_type', 'location', 'created_at', 
@@ -63,8 +56,8 @@ class ListingAdmin(admin.ModelAdmin):
         'created_at', 'updated_at', 'cover_image_preview', 
         'video_preview', 'old_location'
     ]
-    list_editable = ['is_available', 'price', ]  # This is now valid since available_rooms is in list_display
-    raw_id_fields = ['agent', 'location']
+    list_editable = ['is_available', 'price', ]
+    raw_id_fields = ['agent'] # Remove location from raw_id_fields
     filter_horizontal = []
     
     fieldsets = (
@@ -98,9 +91,10 @@ class ListingAdmin(admin.ModelAdmin):
     inlines = [ListingImageInline]
     
     def location_display(self, obj):
-        return obj.location.name if obj.location else obj.old_location or "No location"
+        # Simply return the display value of the choice
+        return obj.get_location_display()
     location_display.short_description = "Location"
-    location_display.admin_order_field = 'location__name'
+    location_display.admin_order_field = 'location'
     
     def room_type_display(self, obj):
         return dict(Listing.ROOM_TYPE_CHOICES).get(obj.room_type, obj.room_type)
@@ -133,7 +127,8 @@ class ListingAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        queryset = queryset.select_related('agent', 'location')
+        # Remove select_related for location (not a FK anymore)
+        queryset = queryset.select_related('agent')
         return queryset
 
 @admin.register(ListingImage)

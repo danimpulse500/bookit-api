@@ -59,19 +59,32 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.full_name
 
 
-class Location(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    description = models.TextField(blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    def __str__(self):
-        return self.name
-    
-    class Meta:
-        ordering = ['name']
 
+# Define Location Choices
+LOCATION_CHOICES = [
+    ('IFITE_ANAMBRA', 'Ifite, Anambra state'),
+    ('LAGOS', 'Lagos'),
+    ('ABUJA', 'Abuja'),
+    ('ENUGU', 'Enugu'),
+    ('PH', 'Port Harcourt'),
+    ('OTHER', 'Other'),
+]
+
+# Define Amenity Choices
+AMENITY_CHOICES = [
+    ('WIFI', 'WiFi'),
+    ('PARKING', 'Parking'),
+    ('POOL', 'Swimming Pool'),
+    ('GYM', 'Gym'),
+    ('AC', 'Air Conditioning'),
+    ('SECURITY', '24/7 Security'),
+    ('POWER', 'Power Backup'),
+    ('BALCONY', 'Balcony'),
+    ('FURNISHED', 'Furnished'),
+    ('KITCHEN', 'Kitchen'),
+    ('TV', 'TV'),
+    ('WASHER', 'Washing Machine'),
+]
 
 class Listing(models.Model):
     # Rename title to lodge_name (with db_column to preserve data)
@@ -80,13 +93,11 @@ class Listing(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # Change location to ForeignKey with Location model
-    location = models.ForeignKey(
-        Location, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
-        related_name='listings'
+    # Change location to CharField with Choices
+    location = models.CharField(
+        max_length=100,
+        choices=LOCATION_CHOICES,
+        default='IFITE_ANAMBRA'
     )
     old_location = models.CharField(max_length=255, blank=True, null=True)  # Temporary field for migration
     
@@ -164,20 +175,12 @@ class Listing(models.Model):
         if not self.agency and self.agent and self.agent.agency_name:
             self.agency = self.agent.agency_name
             
-        # Copy old location data if needed during migration
-        if self.old_location and not self.location:
-            # Try to find or create location from old_location
-            location_obj, created = Location.objects.get_or_create(
-                name=self.old_location,
-                defaults={'description': f'Migrated from old location field'}
-            )
-            self.location = location_obj
-            
         super().save(*args, **kwargs)
     
     class Meta:
         ordering = ['-created_at']
         db_table = 'core_listing'  # Keep original table name
+
 
 
 class ListingImage(models.Model):
