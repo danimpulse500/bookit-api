@@ -12,65 +12,45 @@ from .permissions import IsAgentOrReadOnly
 
 class CustomRegisterView(RegisterView):
     """
-    Custom registration view that integrates with allauth email verification.
+    Custom registration view that handles email sending errors gracefully.
     """
     
-    @extend_schema(
-        summary="Register a new user",
-        description="Create a new user account. A verification email will be sent to the provided email address.",
-        request=UserRegistrationSerializer,
-        responses={
-            201: {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'example': 'Verification email sent.'},
-                    'email': {'type': 'string', 'example': 'user@example.com'}
-                }
-            },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string'},
-                    'email': {'type': 'string'},
-                    'password1': {'type': 'string'},
-                    'password2': {'type': 'string'}
-                }
-            }
-        }
-    )
     def create(self, request, *args, **kwargs):
-        """
-        Override the create method to integrate with allauth email verification.
-        """
         try:
-            # Call the parent RegisterView's create method
             response = super().create(request, *args, **kwargs)
             
-            # Customize the response
             if response.status_code == status.HTTP_201_CREATED:
+                # Customize success response
                 response_data = {
-                    'detail': 'Verification email sent. Please check your email to confirm your account.',
+                    'detail': 'Registration successful. Please check your email for verification.',
                     'email': request.data.get('email'),
                 }
                 return Response(response_data, status=status.HTTP_201_CREATED)
             
             return response
-        except Exception as e:
-            # Log the error for debugging
-            import traceback
-            error_details = traceback.format_exc()
-            print(f"Registration error: {str(e)}")
-            print(f"Traceback: {error_details}")
             
-            # Return the actual error for debugging
+        except Exception as e:
+            # Log the error
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Registration error: {str(e)}", exc_info=True)
+            
+            # Check if it's an email sending error
+            if "email" in str(e).lower() or "smtp" in str(e).lower():
+                return Response(
+                    {
+                        'detail': 'User created but verification email failed to send. Please contact support.',
+                        'email': request.data.get('email'),
+                        'error': 'Email sending failed'
+                    },
+                    status=status.HTTP_201_CREATED  # Still 201 because user was created
+                )
+            
+            # For other errors
             return Response(
-                {
-                    'detail': f'Registration error: {str(e)}',
-                    'error_details': error_details[-500:]  # Last 500 chars of traceback
-                },
+                {'detail': f'Registration error: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
 
 class ListingListCreateView(generics.ListCreateAPIView):
     queryset = Listing.objects.all().order_by('-created_at')
