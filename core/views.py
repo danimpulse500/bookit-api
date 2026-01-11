@@ -15,12 +15,26 @@ class CustomRegisterView(RegisterView):
     Custom registration view that handles email sending errors gracefully.
     """
     
+    @extend_schema(
+        summary="Register a new user",
+        description="Create a new user account. A verification email will be sent.",
+        request=UserRegistrationSerializer,
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Registration successful.'},
+                    'email': {'type': 'string', 'example': 'user@example.com'},
+                    'warning': {'type': 'string', 'example': 'Verification email may have failed.'}
+                }
+            }
+        }
+    )
     def create(self, request, *args, **kwargs):
         try:
             response = super().create(request, *args, **kwargs)
             
             if response.status_code == status.HTTP_201_CREATED:
-                # Customize success response
                 response_data = {
                     'detail': 'Registration successful. Please check your email for verification.',
                     'email': request.data.get('email'),
@@ -30,25 +44,73 @@ class CustomRegisterView(RegisterView):
             return response
             
         except Exception as e:
-            # Log the error
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Registration error: {str(e)}", exc_info=True)
+            # Check if it's an SMTP/email error
+            error_msg = str(e).lower()
+            email_errors = ['smtp', 'socket', 'connection', 'timeout', 'email']
             
-            # Check if it's an email sending error
-            if "email" in str(e).lower() or "smtp" in str(e).lower():
-                return Response(
-                    {
-                        'detail': 'User created but verification email failed to send. Please contact support.',
-                        'email': request.data.get('email'),
-                        'error': 'Email sending failed'
-                    },
-                    status=status.HTTP_201_CREATED  # Still 201 because user was created
-                )
+            if any(err in error_msg for err in email_errors):
+                # User was created but email failed
+                # We need to manually create the user without triggering email
+                return self._create_user_without_email(request)
             
-            # For other errors
+            # For other errors, return 400
             return Response(
                 {'detail': f'Registration error: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def _create_user_without_email(self, request):
+        """
+        Manually create user when email sending fails.
+        """
+        from django.contrib.auth import get_user_model
+        from rest_framework import serializers
+        
+        User = get_user_model()
+        
+        try:
+            # Get data from request
+            data = request.data
+            
+            # Check if user already exists
+            if User.objects.filter(email=data.get('email')).exists():
+                return Response(
+                    {'detail': 'User with this email already exists.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create user manually
+            user = User.objects.create_user(
+                email=data.get('email'),
+                password=data.get('password1'),
+                username=data.get('email'),  # Use email as username
+                full_name=data.get('full_name', ''),
+                phone_number=data.get('phone_number', ''),
+                is_agent=data.get('is_agent', False),
+                agency_name=data.get('agency_name', ''),
+                is_active=False  # User needs to verify email
+            )
+            
+            # Create EmailAddress record for allauth
+            from allauth.account.models import EmailAddress
+            EmailAddress.objects.create(
+                user=user,
+                email=user.email,
+                verified=False,
+                primary=True
+            )
+            
+            # Return success but with warning
+            return Response({
+                'detail': 'Registration successful but verification email failed to send.',
+                'email': user.email,
+                'warning': 'Please contact support to verify your email.',
+                'user_id': user.id
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'detail': f'Registration failed: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
