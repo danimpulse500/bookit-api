@@ -11,34 +11,65 @@ from .permissions import IsAgentOrReadOnly
 
 
 class CustomRegisterView(RegisterView):
+    """
+    Custom registration view that integrates with allauth email verification.
+    """
+    
     @extend_schema(
         summary="Register a new user",
-        description="Create a new user account and return JWT tokens.",
+        description="Create a new user account. A verification email will be sent to the provided email address.",
         request=UserRegistrationSerializer,
         responses={
             201: {
                 'type': 'object',
                 'properties': {
-                    'access': {'type': 'string'},
-                    'refresh': {'type': 'string'},
-                    'user': UserSerializer().data
+                    'detail': {'type': 'string', 'example': 'Verification email sent.'},
+                    'email': {'type': 'string', 'example': 'user@example.com'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'},
+                    'email': {'type': 'string'},
+                    'password1': {'type': 'string'},
+                    'password2': {'type': 'string'}
                 }
             }
         }
     )
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save(request)  
-
-        refresh = RefreshToken.for_user(user)
-        data = {
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': UserSerializer(user, context={'request': request}).data
-        }
-
-        return Response(data, status=status.HTTP_201_CREATED)
+        """
+        Override the create method to integrate with allauth email verification.
+        """
+        try:
+            # Call the parent RegisterView's create method
+            response = super().create(request, *args, **kwargs)
+            
+            # Customize the response
+            if response.status_code == status.HTTP_201_CREATED:
+                response_data = {
+                    'detail': 'Verification email sent. Please check your email to confirm your account.',
+                    'email': request.data.get('email'),
+                }
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            
+            return response
+        except Exception as e:
+            # Log the error for debugging
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Registration error: {str(e)}")
+            print(f"Traceback: {error_details}")
+            
+            # Return the actual error for debugging
+            return Response(
+                {
+                    'detail': f'Registration error: {str(e)}',
+                    'error_details': error_details[-500:]  # Last 500 chars of traceback
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class ListingListCreateView(generics.ListCreateAPIView):

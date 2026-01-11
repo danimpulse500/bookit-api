@@ -18,19 +18,32 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from core.views import CustomRegisterView
-from django.urls import path
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
+    
+    # Core app URLs
     path('api/', include('core.urls')),
+    
+    # JWT Authentication
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    # dj-rest-auth endpoints
     path('api/auth/', include('dj_rest_auth.urls')),
+    
+    # Registration with email verification (using custom view)
     path('api/auth/registration/', CustomRegisterView.as_view(), name='rest_register'),
+    
+    # Allauth URLs - REQUIRED for email verification confirmations
+    path('accounts/', include('allauth.urls')),
+    
+    # Email verification endpoint (standard dj-rest-auth)
+    path('api/auth/registration/verify-email/', include('dj_rest_auth.registration.urls')),
+    
+    # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),

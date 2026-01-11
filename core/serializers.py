@@ -1,13 +1,15 @@
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
-# Remove Location from imports
 from .models import User, Listing, ListingImage, AMENITY_CHOICES
 from allauth.account.adapter import get_adapter
-# Add to core/serializers.py
+from allauth.account import app_settings as allauth_settings
+# Remove the problematic import
+# from allauth.utils import email_address_exists
 from dj_rest_auth.serializers import LoginSerializer
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
+
 
 class CustomLoginSerializer(LoginSerializer):
     username = None  # Remove username field
@@ -54,51 +56,59 @@ class CustomLoginSerializer(LoginSerializer):
         # Authentication through either username or email
         return self.get_auth_user_using_allauth(username, email, password)
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'full_name', 'phone_number', 
-                 'is_agent', 'agency_name', 'date_joined', 'is_staff']
-        read_only_fields = ['id', 'date_joined', 'is_staff']
+                 'is_agent', 'agency_name', 'date_joined', 'is_staff', 'is_active']
+        read_only_fields = ['id', 'date_joined', 'is_staff', 'is_active']
 
 class UserRegistrationSerializer(RegisterSerializer):
-    username = serializers.CharField(required=False, allow_blank=True, max_length=150)
     full_name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
     is_agent = serializers.BooleanField(default=False)
     agency_name = serializers.CharField(required=False, allow_blank=True)
 
-    class Meta:
-        fields = ('email', 'password1', 'password2', 'full_name', 
-                 'phone_number', 'is_agent', 'agency_name')
-
-    def validate_email(self, email):
-        email = get_adapter().clean_email(email)
-        
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError(
-                "A user is already registered with this email address."
-            )
-        return email
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove username field from validation since we're not using it
+        self.fields.pop('username', None)
 
     def get_cleaned_data(self):
+        """
+        Get cleaned data including custom fields.
+        """
         data = super().get_cleaned_data()
-        data['username'] =  data.get('email')
-        data['full_name'] = self.validated_data.get('full_name', '')
-        data['phone_number'] = self.validated_data.get('phone_number', '')
-        data['is_agent'] = self.validated_data.get('is_agent', False)
-        data['agency_name'] = self.validated_data.get('agency_name', '')
+        # Generate a username from email
+        email = data.get('email', '')
+        if email:
+            data['username'] = email.split('@')[0]  # Use part before @ as username
+        
+        # Add custom fields
+        data.update({
+            'full_name': self.validated_data.get('full_name', ''),
+            'phone_number': self.validated_data.get('phone_number', ''),
+            'is_agent': self.validated_data.get('is_agent', False),
+            'agency_name': self.validated_data.get('agency_name', ''),
+        })
         return data
 
-    def save(self, request):
-        user = super().save(request)
-        user.full_name = self.cleaned_data.get('full_name')
-        user.phone_number = self.cleaned_data.get('phone_number')
-        user.is_agent = self.cleaned_data.get('is_agent')
-        user.agency_name = self.cleaned_data.get('agency_name')
+    def custom_signup(self, request, user):
+        """
+        This method is automatically called by allauth after user creation.
+        Set custom fields here.
+        """
+        user.full_name = self.cleaned_data.get('full_name', '')
+        user.phone_number = self.cleaned_data.get('phone_number', '')
+        user.is_agent = self.cleaned_data.get('is_agent', False)
+        user.agency_name = self.cleaned_data.get('agency_name', '')
+        
+        # Set username to email if not set
+        if not user.username:
+            user.username = self.cleaned_data.get('email', '')
+        
         user.save()
-        return user
-
 # LocationSerializer REMOVED
 
 class ListingImageSerializer(serializers.ModelSerializer):
@@ -112,16 +122,13 @@ class ListingImageSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         return obj.image.url if obj.image else None
 
+
 class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
     cover_image_url = serializers.SerializerMethodField()
-    # location_detail REMOVED since location is now a choice field
-    # location_display to show the readable name of the choice
     location_display = serializers.CharField(source='get_location_display', read_only=True)
     
-    # Amenities as Multiple Choice Field
     amenities = serializers.MultipleChoiceField(choices=AMENITY_CHOICES, required=False)
-
     agent_detail = UserSerializer(source='agent', read_only=True)
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(max_length=None, allow_empty_file=False), 
@@ -130,10 +137,6 @@ class ListingSerializer(serializers.ModelSerializer):
     )
     video_url = serializers.SerializerMethodField()
     
-    # Remove old fields that don't exist in model
-    # bedrooms, bathrooms are still in model but marked for deprecation
-    # title field doesn't exist - it's now lodge_name
-
     class Meta:
         model = Listing
         fields = [
@@ -150,34 +153,28 @@ class ListingSerializer(serializers.ModelSerializer):
             'video_url', 'agent_detail', 'location_display', 'old_location'
         ]
         extra_kwargs = {
-            'location': {'required': True}, # Location is now required and simple
+            'location': {'required': True},
             'agent': {'required': False},
             'video': {'required': False, 'allow_null': True},
         }
 
     def get_cover_image_url(self, obj):
-        """Get cover image URL from first ListingImage"""
         return obj.cover_image_url
 
     def get_video_url(self, obj):
-        """Get video URL if exists"""
         return obj.video.url if obj.video else None
 
     def validate(self, data):
-        """Custom validation"""
         request = self.context.get('request')
         
-        # Ensure agent is set for non-staff users
         if request and not request.user.is_staff:
             data['agent'] = request.user
             
-            # Check if user is an agent
             if not request.user.is_agent:
                 raise serializers.ValidationError(
                     "Only agents can create listings."
                 )
         
-        # Auto-populate agency from agent
         if 'agent' in data and data['agent'] and not data.get('agency'):
             if hasattr(data['agent'], 'agency_name') and data['agent'].agency_name:
                 data['agency'] = data['agent'].agency_name
@@ -188,18 +185,16 @@ class ListingSerializer(serializers.ModelSerializer):
         uploaded_images = validated_data.pop('uploaded_images', [])
         request = self.context.get('request')
         
-        # Set agent if not provided
         if not validated_data.get('agent') and request:
             validated_data['agent'] = request.user
         
         listing = Listing.objects.create(**validated_data)
         
-        # Create listing images
         for index, image in enumerate(uploaded_images):
             ListingImage.objects.create(
                 listing=listing, 
                 image=image,
-                is_primary=(index == 0)  # First image as primary
+                is_primary=(index == 0)
             )
         
         return listing
@@ -207,20 +202,18 @@ class ListingSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
         
-        # Update listing fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         
-        # Add new images if provided
         if uploaded_images:
             for image in uploaded_images:
                 ListingImage.objects.create(listing=instance, image=image)
         
         return instance
 
+
 class ListingCreateUpdateSerializer(serializers.ModelSerializer):
-    """Simplified serializer for create/update operations"""
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(max_length=None, allow_empty_file=False), 
         write_only=True, 
@@ -242,6 +235,7 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         return ListingSerializer.update(self, instance, validated_data)
+
 
 class AgentProfileSerializer(serializers.ModelSerializer):
     listings_count = serializers.SerializerMethodField()

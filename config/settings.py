@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    
+    # Third-party apps
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -59,6 +61,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'cloudinary_storage',
     'cloudinary',
+    
+    # Local apps
     'core',
 ]
 
@@ -83,7 +87,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Added for email templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -110,9 +114,6 @@ if DEBUG:
             }
         }
     }
-    # DATABASES = {
-    #     'default': dj_database_url.config(default=env('DATABASE_URL'))
-    # }
 else:
     DATABASES = {
         'default': dj_database_url.config(default=env('DATABASE_URL'))
@@ -123,6 +124,8 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',  # Added for dj-rest-auth
+        'rest_framework.authentication.TokenAuthentication',    # Added for compatibility
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
@@ -143,54 +146,61 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-REST_AUTH_REGISTER_SERIALIZERS = {
-    'REGISTER_SERIALIZER': 'core.serializers.UserRegistrationSerializer',
-}
+# ==================== ALLAUTH & DJ-REST-AUTH CONFIGURATION ====================
 
-ACCOUNT_ADAPTER = 'core.adapters.CustomAccountAdapter'
-
-# Allauth settings
+# Authentication backends
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
+# ==================== EMAIL CONFIGURATION ====================
 if DEBUG:
+    # Console backend for development
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    SITE_DOMAIN = 'http://localhost:8000'
 else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    # EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
-    # EMAIL_PORT = env.int('EMAIL_PORT', default=587)
-    # EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
-    # EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
-    # EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-    # DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
+    # SMTP backend for production
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+    EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+    EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+    EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+    DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
+    SITE_DOMAIN = env('SITE_DOMAIN', default='https://yourdomain.com')
 
-# CRITICAL FIX: Add ACCOUNT_SIGNUP_FIELDS when using mandatory email verification
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1', 'password2']
+# Frontend URL for email links
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5500')
 
-# Allauth Email Verification Settings
-if DEBUG:
-    ACCOUNT_EMAIL_VERIFICATION = 'optional'
-else:
-    ACCOUNT_EMAIL_VERIFICATION = 'optional'
-ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+# ==================== ALLAUTH SETTINGS ====================
+# Email verification settings
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Changed to mandatory for required verification
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True  # Confirm email immediately when user clicks link
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_EMAIL_SUBJECT_PREFIX = '[BookIt] '
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto login after email confirmation
+ACCOUNT_LOGOUT_ON_GET = True
 
+# Authentication method
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 
-# Email confirmation URL (frontend URL)
-FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5500')
+# Required for mandatory email verification
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1', 'password2']
+
+# Email confirmation URLs (frontend URLs)
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = f'{FRONTEND_URL}/email-verified/'
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = f'{FRONTEND_URL}/email-verified/'
 
-# Dj-rest-auth settings to enforce email verification
+# Login/Logout URLs
+LOGIN_URL = 'rest_login'  # dj-rest-auth login endpoint
+LOGIN_REDIRECT_URL = f'{FRONTEND_URL}/'
+LOGOUT_REDIRECT_URL = f'{FRONTEND_URL}/'
+
+# ==================== DJ-REST-AUTH SETTINGS ====================
 REST_AUTH = {
     'USE_JWT': True,
     'JWT_AUTH_HTTPONLY': False,
@@ -199,19 +209,35 @@ REST_AUTH = {
     'USER_DETAILS_SERIALIZER': 'core.serializers.UserSerializer',
     'TOKEN_MODEL': None,
     
-    # CRITICAL: These settings enable email verification
+    # Email verification settings
+    'OLD_PASSWORD_FIELD_ENABLED': True,
+    'LOGOUT_ON_PASSWORD_CHANGE': False,
+    'SESSION_LOGIN': False,
+    
+    # Email verification URLs
+    'EMAIL_VERIFICATION_URL': f'{FRONTEND_URL}/verify-email/{{key}}/',
+    'PASSWORD_RESET_CONFIRM_URL': f'{FRONTEND_URL}/password-reset/{{uid}}/{{token}}/',
+    
+    # Email templates
+    'EMAIL_VERIFICATION_SENT_EMAIL': 'allauth.account.emails.EmailConfirmationEmail',
+    'PASSWORD_RESET_SENT_EMAIL': 'allauth.account.emails.EmailPasswordResetEmail',
+    
+    # Custom field configuration
     'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
     'REGISTER_SERIALIZER_CUSTOM_FIELDS': {
         'email': 'email',
         'password1': 'password1', 
         'password2': 'password2',
     },
-    
-    # Email verification settings
-    'OLD_PASSWORD_FIELD_ENABLED': True,
-    'LOGOUT_ON_PASSWORD_CHANGE': False,
-    'SESSION_LOGIN': False,
 }
+
+# Custom adapters and serializers
+ACCOUNT_ADAPTER = 'core.adapters.CustomAccountAdapter'
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'core.serializers.UserRegistrationSerializer',
+}
+
+# ==================== END AUTH CONFIGURATION ====================
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
