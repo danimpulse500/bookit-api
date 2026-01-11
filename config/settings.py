@@ -175,7 +175,7 @@ FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5500')
 
 # ==================== ALLAUTH SETTINGS ====================
 # Email verification settings
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Changed to mandatory for required verification
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Changed to mandatory for required verification
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True  # Confirm email immediately when user clicks link
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_EMAIL_SUBJECT_PREFIX = '[BookIt] '
