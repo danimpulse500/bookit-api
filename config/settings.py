@@ -159,21 +159,25 @@ if DEBUG:
     # Console backend for development
     # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     # SITE_DOMAIN = 'http://localhost:8000'
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # settings.py
+    EMAIL_BACKEND = 'core.email_backends.SendGridBackend'
+    SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
+    DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'
+    EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
     EMAIL_PORT = env.int('EMAIL_PORT', default=587)
     EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
-    EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='apikey')  
     EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-    DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
+    # DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
     SITE_DOMAIN = env('SITE_DOMAIN', default='https://yourdomain.com')
 else:
     # SMTP backend for production
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+    EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
     EMAIL_PORT = env.int('EMAIL_PORT', default=587)
     EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
-    EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='apikey')  
     EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
     DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
     SITE_DOMAIN = env('SITE_DOMAIN', default='https://yourdomain.com')
@@ -297,5 +301,19 @@ else:
 CORS_ALLOW_ALL_ORIGINS = True  
 CORS_ALLOW_CREDENTIALS = True
 
-EMAIL_TIMEOUT=30
-EMAIL_CONNECTION_RETRY=True 
+# EMAIL_TIMEOUT=30
+# EMAIL_CONNECTION_RETRY=True 
+
+
+
+# settings.py
+# Tell allauth to use HTML emails
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '[BookIt] '
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+
+# Email template settings
+ACCOUNT_TEMPLATE_EXTENSION = 'html'  # Use .html templates
+
+DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'  # Your verified sender
+SERVER_EMAIL = 'danimpulse500@gmail.com' 

@@ -1,0 +1,351 @@
+<!-- templates/account/email/email_confirmation_signup.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - BookIt</title>
+    <style>
+        /* Base Styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+        }
+        
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .logo {
+            font-size: 36px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .email-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+            opacity: 0.95;
+        }
+        
+        /* Content */
+        .email-content {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* Greeting */
+        .greeting {
+            font-size: 18px;
+            color: #4a5568;
+            margin-bottom: 25px;
+        }
+        
+        .greeting strong {
+            color: #2d3748;
+        }
+        
+        /* Message */
+        .message {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 35px;
+            line-height: 1.7;
+        }
+        
+        /* Button */
+        .verify-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 17px;
+            margin: 25px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .verify-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Link Container */
+        .link-container {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .link-label {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .verification-link {
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            color: #2d3748;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        
+        /* Warning Box */
+        .warning-box {
+            background: #fffaf0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            border-left: 4px solid #ed8936;
+        }
+        
+        .warning-title {
+            color: #c05621;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .warning-title::before {
+            content: "⚠️";
+        }
+        
+        .warning-text {
+            color: #744210;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        /* Footer */
+        .email-footer {
+            margin-top: 40px;
+            padding-top: 25px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .social-links {
+            margin: 20px 0;
+        }
+        
+        .social-link {
+            display: inline-block;
+            margin: 0 12px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .social-link:hover {
+            color: #764ba2;
+        }
+        
+        .copyright {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #a0aec0;
+        }
+        
+        .footer-links {
+            margin-top: 15px;
+        }
+        
+        .footer-link {
+            color: #718096;
+            text-decoration: none;
+            margin: 0 10px;
+            font-size: 13px;
+        }
+        
+        .footer-link:hover {
+            color: #667eea;
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .email-container {
+                padding: 10px;
+            }
+            
+            .email-header {
+                padding: 30px 15px;
+            }
+            
+            .email-content {
+                padding: 30px 20px;
+            }
+            
+            .verify-button {
+                padding: 14px 30px;
+                font-size: 16px;
+            }
+            
+            .logo {
+                font-size: 30px;
+            }
+            
+            .email-header h1 {
+                font-size: 24px;
+            }
+        }
+        
+        /* Center align for button */
+        .center-align {
+            text-align: center;
+        }
+        
+        /* Brand colors */
+        .brand-color {
+            color: #667eea;
+        }
+        
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header Section -->
+        <div class="email-header">
+            <div class="logo">BookIt</div>
+            <h1>Verify Your Email Address</h1>
+            <p style="margin-top: 10px; opacity: 0.9; font-size: 16px;">Welcome to our community! 🎉</p>
+        </div>
+        
+        <!-- Content Section -->
+        <div class="email-content">
+            <!-- Greeting -->
+            <div class="greeting">
+                Hello <strong>{{ user.username }}</strong>,
+            </div>
+            
+            <!-- Message -->
+            <div class="message">
+                <p>Welcome to <strong class="brand-color">BookIt</strong>! We're thrilled to have you join our community of property seekers and agents.</p>
+                
+                <p>To get started and unlock all features, please verify your email address by clicking the button below:</p>
+            </div>
+            
+            <!-- Verify Button -->
+            <div class="center-align">
+                <a href="{{ activate_url }}" class="verify-button">
+                    Verify Email Address
+                </a>
+            </div>
+            
+            <!-- Alternative Link -->
+            <div class="link-container">
+                <div class="link-label">Or copy and paste this link into your browser:</div>
+                <div class="verification-link">{{ activate_url }}</div>
+            </div>
+            
+            <!-- Warning Box -->
+            <div class="warning-box">
+                <div class="warning-title">Important Security Note</div>
+                <div class="warning-text">
+                    This verification link will expire in <strong>24 hours</strong> for security reasons. 
+                    If you don't verify within this time, you'll need to request a new verification email.
+                </div>
+            </div>
+            
+            <!-- Divider -->
+            <div class="divider"></div>
+            
+            <!-- Additional Info -->
+            <div class="message">
+                <p><strong>What's next after verification?</strong></p>
+                <ul style="color: #4a5568; line-height: 1.7; padding-left: 20px;">
+                    <li>Complete your profile</li>
+                    <li>Browse available properties</li>
+                    <li>Save your favorite listings</li>
+                    <li>Contact property agents directly</li>
+                </ul>
+                
+                <p style="margin-top: 25px;">
+                    If you didn't create an account with BookIt, please ignore this email or 
+                    <a href="mailto:support@bookit.com" style="color: #667eea; text-decoration: none;">contact our support team</a> 
+                    if you have concerns.
+                </p>
+            </div>
+            
+            <!-- Closing -->
+            <div class="message" style="font-style: italic; color: #718096;">
+                <p>Best regards,<br>
+                <strong>The BookIt Team</strong></p>
+            </div>
+            
+            <!-- Footer -->
+            <div class="email-footer">
+                <div class="social-links">
+                    <a href="https://twitter.com/bookit" class="social-link">Twitter</a>
+                    <span style="color: #cbd5e0;">•</span>
+                    <a href="https://facebook.com/bookit" class="social-link">Facebook</a>
+                    <span style="color: #cbd5e0;">•</span>
+                    <a href="https://instagram.com/bookit" class="social-link">Instagram</a>
+                </div>
+                
+                <div class="copyright">
+                    © {% now "Y" %} BookIt. All rights reserved.
+                </div>
+                
+                <div class="footer-links">
+                    <a href="https://bookit.com/privacy" class="footer-link">Privacy Policy</a>
+                    <span style="color: #cbd5e0;">•</span>
+                    <a href="https://bookit.com/terms" class="footer-link">Terms of Service</a>
+                    <span style="color: #cbd5e0;">•</span>
+                    <a href="https://bookit.com/help" class="footer-link">Help Center</a>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 12px; color: #a0aec0;">
+                    BookIt Inc.<br>
+                    1234 Property Street, Suite 567<br>
+                    San Francisco, CA 94107
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

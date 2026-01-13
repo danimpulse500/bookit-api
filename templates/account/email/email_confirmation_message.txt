@@ -1,0 +1,39 @@
+{% load i18n %}{% autoescape off %}{% blocktrans %}Hello {{ user.username }},
+
+Welcome to BookIt! We're excited to have you join our community.
+
+To complete your registration and start exploring amazing properties, please verify your email address by clicking the link below:
+
+{{ activate_url }}
+
+Or copy and paste this link into your browser:
+{{ activate_url }}
+
+IMPORTANT: This verification link will expire in 24 hours for security reasons. If you don't verify within this time, you'll need to request a new verification email.
+
+What's next after verification?
+• Complete your profile
+• Browse available properties
+• Save your favorite listings
+• Contact property agents directly
+
+If you didn't create an account with BookIt, please ignore this email or contact our support team at support@bookit.com if you have concerns.
+
+Best regards,
+The BookIt Team
+
+---
+BookIt Inc.
+1234 Property Street, Suite 567
+San Francisco, CA 94107
+
+Follow us:
+Twitter: https://twitter.com/bookit
+Facebook: https://facebook.com/bookit
+Instagram: https://instagram.com/bookit
+
+Privacy Policy: https://bookit.com/privacy
+Terms of Service: https://bookit.com/terms
+Help Center: https://bookit.com/help
+
+© BookIt. All rights reserved.{% endblocktrans %}{% endautoescape %}
