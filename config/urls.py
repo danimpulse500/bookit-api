@@ -15,10 +15,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path  
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from core.views import CustomRegisterView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from dj_rest_auth.registration.views import ResendEmailVerificationView, VerifyEmailView
+from django.views.generic import TemplateView
 
 urlpatterns = [
     # Admin
@@ -33,6 +35,12 @@ urlpatterns = [
     
     # dj-rest-auth endpoints
     path('api/auth/', include('dj_rest_auth.urls')),
+
+    re_path(
+        r'^account-confirm-email/(?P<key>[-:\w]+)/$',
+        TemplateView.as_view(),
+        name='account_confirm_email',
+    ),
     
     # Registration with email verification (using custom view)
     path('api/auth/registration/', CustomRegisterView.as_view(), name='rest_register'),
@@ -41,7 +49,8 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     
     # Email verification endpoint (standard dj-rest-auth)
-    path('api/auth/registration/verify-email/', include('dj_rest_auth.registration.urls')),
+    path('api/auth/registration/verify-email/', VerifyEmailView.as_view(), name='rest_verify_email'),
+    path('api/auth/registration/resend-email/', ResendEmailVerificationView.as_view(), name='rest_resend_email'),
     
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

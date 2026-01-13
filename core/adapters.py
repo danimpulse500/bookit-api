@@ -38,5 +38,5 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         # Use the FRONTEND_URL from settings for the confirmation link
         from django.conf import settings
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-        return f"{frontend_url}/verify-email/{emailconfirmation.key}/"
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://bookit-ecru-sigma.vercel.app')
+        return f"{frontend_url}/api/auth/registration/verify-email/{emailconfirmation.key}/"
