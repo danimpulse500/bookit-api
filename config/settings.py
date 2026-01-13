@@ -184,6 +184,12 @@ else:
 
 # Frontend URL for email links
 FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5500')
+BACKEND_DOMAIN = "https://bookit-api-tpvz.onrender.com"
+
+ACCOUNT_EMAIL_CONFIRMATION_URL = f'{BACKEND_DOMAIN}/api/auth/registration/verify-email/'
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = f'{FRONTEND_URL}/email-verified-success/'
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = f'{FRONTEND_URL}/email-verified-success/'
+
 
 # ==================== ALLAUTH SETTINGS ====================
 # Email verification settings
