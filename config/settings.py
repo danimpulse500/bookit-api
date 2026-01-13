@@ -164,22 +164,20 @@ if DEBUG:
     EMAIL_BACKEND = 'core.email_backends.SendGridBackend'
     SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
     DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'
-    EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
-    EMAIL_PORT = env.int('EMAIL_PORT', default=587)
-    EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
     EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='apikey')  
-    EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+    EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
+    # EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+    # EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+    # EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
     # DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
     SITE_DOMAIN = env('SITE_DOMAIN', default='https://yourdomain.com')
 else:
     # SMTP backend for production
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
-    EMAIL_PORT = env.int('EMAIL_PORT', default=587)
-    EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+    EMAIL_BACKEND = 'core.email_backends.SendGridBackend'
+    SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
+    DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'
     EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='apikey')  
-    EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-    DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bookit.com')
+    EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
     SITE_DOMAIN = env('SITE_DOMAIN', default='https://yourdomain.com')
 
 # Frontend URL for email links
