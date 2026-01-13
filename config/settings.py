@@ -191,6 +191,7 @@ ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = f'{FRONTEND_URL}/email-verif
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = f'{FRONTEND_URL}/email-verified-success/'
 
 
+
 # ==================== ALLAUTH SETTINGS ====================
 # Email verification settings
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Changed to mandatory for required verification
@@ -323,3 +324,6 @@ ACCOUNT_TEMPLATE_EXTENSION = 'html'  # Use .html templates
 
 DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'  # Your verified sender
 SERVER_EMAIL = 'danimpulse500@gmail.com' 
+
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins
+CORS_ALLOW_CREDENTIALS = True
