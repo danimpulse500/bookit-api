@@ -46,6 +46,7 @@ urlpatterns = [
     # Registration with email verification (using custom view)
     path('api/auth/registration/', CustomRegisterView.as_view(), name='rest_register'),
 
+    # Google Login (custom endpoint)
     path('api/auth/google/', GoogleLogin.as_view(), name='google_login'),
     
     # Allauth URLs - REQUIRED for email verification confirmations

@@ -20,8 +20,16 @@ from dj_rest_auth.registration.views import SocialLoginView
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
-    callback_url = "https://bookit-ecru-sigma.vercel.app"  # Your frontend callback URL
     client_class = OAuth2Client
+    
+    @property
+    def callback_url(self):
+        # This should match what you entered in Django admin
+        # For development:
+        if settings.DEBUG:
+            return "http://localhost:5500"  # Your frontend URL
+        # For production:
+        return "https://bookit-ecru-sigma.vercel.app"
     
 class CustomRegisterView(RegisterView):
     """

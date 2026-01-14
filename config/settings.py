@@ -310,7 +310,13 @@ CORS_ALLOW_CREDENTIALS = True
 # EMAIL_TIMEOUT=30
 # EMAIL_CONNECTION_RETRY=True 
 
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # For social accounts - Google already verifies
 
+# Important: Make sure social accounts don't trigger email verification
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_AUTO_SIGNUP = True  # This is crucial!
+SOCIALACCOUNT_STORE_TOKENS = False  
 
 # settings.py
 # Tell allauth to use HTML emails
@@ -326,3 +332,57 @@ SERVER_EMAIL = 'danimpulse500@gmail.com'
 
 CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins
 CORS_ALLOW_CREDENTIALS = True
+
+# In settings.py
+# Session settings for OAuth
+SESSION_COOKIE_SAMESITE = 'Lax' if DEBUG else 'None'
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# For OAuth to work properly in iframes/redirects
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5500",
+    "http://localhost:3000",
+    "https://bookit-ecru-sigma.vercel.app",
+    "https://bookit-api-tpvz.onrender.com",
+]
+
+
+# Required for OAuth
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
+SOCIALACCOUNT_ADAPTER = 'core.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_CALLBACK_URL = env('FRONTEND_URL', default='http://localhost:5500')
