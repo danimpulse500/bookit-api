@@ -12,8 +12,17 @@ from rest_framework import status
 from rest_framework.response import Response
 from dj_rest_auth.registration.views import RegisterView
 from django.core.exceptions import ValidationError
-# get_user_model = User
 from django.contrib.auth import get_user_model
+from django.urls import path, include
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = "https://bookit-ecru-sigma.vercel.app"  # Your frontend callback URL
+    client_class = OAuth2Client
+    
 class CustomRegisterView(RegisterView):
     """
     Simple wrapper around dj-rest-auth's RegisterView with better error handling.

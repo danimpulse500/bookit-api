@@ -21,6 +21,7 @@ from core.views import CustomRegisterView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from dj_rest_auth.registration.views import ResendEmailVerificationView, VerifyEmailView
 from django.views.generic import TemplateView
+from core.views import GoogleLogin
 
 urlpatterns = [
     # Admin
@@ -44,6 +45,8 @@ urlpatterns = [
     
     # Registration with email verification (using custom view)
     path('api/auth/registration/', CustomRegisterView.as_view(), name='rest_register'),
+
+    path('api/auth/google/', GoogleLogin.as_view(), name='google_login'),
     
     # Allauth URLs - REQUIRED for email verification confirmations
     path('accounts/', include('allauth.urls')),
