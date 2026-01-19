@@ -62,11 +62,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 # Define Location Choices
 LOCATION_CHOICES = [
-    ('IFITE_ANAMBRA', 'Ifite, Anambra state'),
-    ('LAGOS', 'Lagos'),
-    ('ABUJA', 'Abuja'),
-    ('ENUGU', 'Enugu'),
-    ('PH', 'Port Harcourt'),
+    ('Aroma', 'Awka'),
+    ('Amansea', 'Amansea'),
+    ('Ifite', 'Up School'),
+    ('Ifite', 'Down School'),
+    ('Temp Site', 'Awka'),
     ('OTHER', 'Other'),
 ]
 
