@@ -39,6 +39,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+
     username = models.CharField(max_length=150, blank=True, null=True)
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
@@ -62,29 +63,29 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 # Define Location Choices
 LOCATION_CHOICES = [
-    ('Aroma', 'Awka'),
-    ('Amansea', 'Amansea'),
-    ('Ifite', 'Up School'),
-    ('Ifite', 'Down School'),
-    ('Temp Site', 'Awka'),
+    ('AROMA', 'Aroma'),
+    ('AMANSEA', 'Amansea'),
+    ('IFITE_ANAMBRA', 'Ifite Anambra'),
+    ('IFITE UP SCHOOL', 'Ifite Up School'),
+    ('IFITE DOWN SCHOOL', 'Ifite Down School'),
+    ('TEMP SITE', 'Temp Site'),
     ('OTHER', 'Other'),
 ]
 
-# Define Amenity Choices
-AMENITY_CHOICES = [
-    ('WIFI', 'WiFi'),
-    ('PARKING', 'Parking'),
-    ('POOL', 'Swimming Pool'),
-    ('GYM', 'Gym'),
-    ('AC', 'Air Conditioning'),
-    ('SECURITY', '24/7 Security'),
-    ('POWER', 'Power Backup'),
-    ('BALCONY', 'Balcony'),
-    ('FURNISHED', 'Furnished'),
-    ('KITCHEN', 'Kitchen'),
-    ('TV', 'TV'),
-    ('WASHER', 'Washing Machine'),
-]
+# First, create the Amenity model
+class Amenity(models.Model):
+    name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=100, blank=True, null=True, help_text="Icon class or URL")
+    description = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name_plural = "Amenities"
+        ordering = ['name']
+
+# Removed AMENITY_CHOICES constant entirely
 
 class Listing(models.Model):
     # Rename title to lodge_name (with db_column to preserve data)
@@ -118,8 +119,13 @@ class Listing(models.Model):
         default='SELF_CONTAINED'
     )
     
-    # Amenities (store as JSON)
-    amenities = models.JSONField(default=list, blank=True, null=True)
+    # Replace JSONField with ManyToManyField for amenities
+    amenities = models.ManyToManyField(
+        Amenity,
+        related_name='listings',
+        blank=True,
+        help_text="Select amenities available in this listing"
+    )
     
     # Room numbers
     total_rooms = models.PositiveIntegerField(default=1, help_text="Total number of rooms in the property")
@@ -180,8 +186,6 @@ class Listing(models.Model):
     class Meta:
         ordering = ['-created_at']
         db_table = 'core_listing'  # Keep original table name
-
-
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')

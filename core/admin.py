@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
-from .models import User, Listing, ListingImage
+from .models import User, Listing, ListingImage, Amenity
 
 class UserAdmin(BaseUserAdmin):
     ordering = ["email"]
@@ -36,17 +36,52 @@ class ListingImageInline(admin.TabularInline):
         return "No image"
     image_preview.short_description = "Preview"
 
-# LocationAdmin REMOVED
+@admin.register(Amenity)
+class AmenityAdmin(admin.ModelAdmin):
+    list_display = ['name', 'icon_preview', 'listing_count', 'description_preview']
+    list_filter = []
+    search_fields = ['name', 'description']
+    fieldsets = (
+        ("Basic Information", {
+            "fields": ("name", "icon", "description")
+        }),
+        ("Statistics", {
+            "fields": ("listing_count",),
+            "classes": ("collapse",)
+        }),
+    )
+    readonly_fields = ['listing_count']
+    
+    def icon_preview(self, obj):
+        if obj.icon:
+            if obj.icon.startswith(('http://', 'https://')):
+                # If it's a URL, show the image
+                return format_html('<img src="{}" width="30" height="30" />', obj.icon)
+            else:
+                # If it's an icon class, show the class name
+                return format_html('<code>{}</code>', obj.icon)
+        return "-"
+    icon_preview.short_description = "Icon"
+    
+    def description_preview(self, obj):
+        if obj.description and len(obj.description) > 50:
+            return f"{obj.description[:50]}..."
+        return obj.description or "-"
+    description_preview.short_description = "Description"
+    
+    def listing_count(self, obj):
+        return obj.listings.count()
+    listing_count.short_description = "Used in Listings"
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
     list_display = [
         'lodge_name', 'price', 'location_display', 'room_type_display', 
-         'is_available', 'agent_display', 'created_at'
+        'amenities_count', 'is_available', 'agent_display', 'created_at'
     ]
     list_filter = [
         'is_available', 'room_type', 'location', 'created_at', 
-        'agent__is_agent', 'agent__agency_name'
+        'agent__is_agent', 'agent__agency_name', 'amenities'
     ]
     search_fields = [
         'lodge_name', 'description', 'room_number', 
@@ -54,11 +89,11 @@ class ListingAdmin(admin.ModelAdmin):
     ]
     readonly_fields = [
         'created_at', 'updated_at', 'cover_image_preview', 
-        'video_preview', 'old_location'
+        'video_preview', 'old_location', 'amenities_list_display'
     ]
-    list_editable = ['is_available', 'price', ]
-    raw_id_fields = ['agent'] # Remove location from raw_id_fields
-    filter_horizontal = []
+    list_editable = ['is_available', 'price']
+    raw_id_fields = ['agent']
+    filter_horizontal = ['amenities']  # Changed from empty list to include amenities
     
     fieldsets = (
         ("Basic Information", {
@@ -68,10 +103,13 @@ class ListingAdmin(admin.ModelAdmin):
             "fields": ("location", "old_location", "room_type", "room_number")
         }),
         ("Room Details", {
-            "fields": ("total_rooms",)  # FIXED: Added comma to make it a tuple
+            "fields": ("total_rooms",)
         }),
-        ("Amenities & Rules", {
-            "fields": ("amenities", "rules")
+        ("Amenities", {
+            "fields": ("amenities", "amenities_list_display")
+        }),
+        ("Rules", {
+            "fields": ("rules",)
         }),
         ("Contact Information", {
             "fields": ("contact_phone", "contact_email")
@@ -91,7 +129,6 @@ class ListingAdmin(admin.ModelAdmin):
     inlines = [ListingImageInline]
     
     def location_display(self, obj):
-        # Simply return the display value of the choice
         return obj.get_location_display()
     location_display.short_description = "Location"
     location_display.admin_order_field = 'location'
@@ -99,6 +136,18 @@ class ListingAdmin(admin.ModelAdmin):
     def room_type_display(self, obj):
         return dict(Listing.ROOM_TYPE_CHOICES).get(obj.room_type, obj.room_type)
     room_type_display.short_description = "Room Type"
+    
+    def amenities_count(self, obj):
+        return obj.amenities.count()
+    amenities_count.short_description = "Amenities"
+    amenities_count.admin_order_field = 'amenities'
+    
+    def amenities_list_display(self, obj):
+        amenities = obj.amenities.all()
+        if amenities:
+            return ", ".join([amenity.name for amenity in amenities])
+        return "No amenities"
+    amenities_list_display.short_description = "Current Amenities"
     
     def agent_display(self, obj):
         if obj.agent:
@@ -127,8 +176,8 @@ class ListingAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        # Remove select_related for location (not a FK anymore)
-        queryset = queryset.select_related('agent')
+        # Prefetch amenities to reduce database queries
+        queryset = queryset.select_related('agent').prefetch_related('amenities')
         return queryset
 
 @admin.register(ListingImage)
