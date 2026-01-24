@@ -76,7 +76,7 @@ class AmenityAdmin(admin.ModelAdmin):
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
     list_display = [
-        'lodge_name', 'price', 'location_display', 'room_type_display', 
+        'lodge_name', 'first_price', 'yearly_price_display', 'location_display', 'room_type_display', 
         'amenities_count', 'is_available', 'agent_display', 'created_at'
     ]
     list_filter = [
@@ -91,13 +91,13 @@ class ListingAdmin(admin.ModelAdmin):
         'created_at', 'updated_at', 'cover_image_preview', 
         'video_preview', 'old_location', 'amenities_list_display'
     ]
-    list_editable = ['is_available', 'price']
+    list_editable = ['is_available']
     raw_id_fields = ['agent']
-    filter_horizontal = ['amenities']  # Changed from empty list to include amenities
+    filter_horizontal = ['amenities']
     
     fieldsets = (
         ("Basic Information", {
-            "fields": ("lodge_name", "description", "price", "is_available")
+            "fields": ("lodge_name", "description", "first_price", "year_price", "is_available")
         }),
         ("Location & Type", {
             "fields": ("location", "old_location", "room_type", "room_number")
@@ -155,6 +155,11 @@ class ListingAdmin(admin.ModelAdmin):
         return "No agent"
     agent_display.short_description = "Agent"
     agent_display.admin_order_field = 'agent__full_name'
+    
+    def yearly_price_display(self, obj):
+        return f"₦{obj.year_price:,.2f}" if obj.year_price else "-"
+    yearly_price_display.short_description = "Yearly Price"
+    yearly_price_display.admin_order_field = 'year_price'
     
     def cover_image_preview(self, obj):
         if obj.cover_image_url:

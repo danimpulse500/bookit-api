@@ -92,7 +92,8 @@ class Listing(models.Model):
     lodge_name = models.CharField(max_length=255, db_column='title')
     
     description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    first_price = models.DecimalField(max_digits=10, decimal_places=2, db_column='price')
+    year_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     
     # Change location to CharField with Choices
     location = models.CharField(

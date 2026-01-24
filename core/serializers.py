@@ -156,7 +156,7 @@ class ListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = [
-            'id', 'lodge_name', 'description', 'price', 
+            'id', 'lodge_name', 'description', 'first_price', 'year_price',
             'location', 'location_display', 'old_location', 'room_type',
             'amenities', 'amenity_names', 'total_rooms', 
             'room_number', 'video', 'video_url',
@@ -293,7 +293,7 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = [
-            'lodge_name', 'description', 'price', 'location',
+            'lodge_name', 'description', 'first_price', 'year_price', 'location',
             'room_type', 'amenity_names', 'total_rooms', 
             'room_number', 'video',
             'is_available', 'rules', 'contact_phone', 'contact_email',

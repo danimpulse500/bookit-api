@@ -118,7 +118,8 @@ class ListingListCreateView(generics.ListCreateAPIView):
         'room_type', 
         'is_available',
         'agent',
-        'price',
+        'first_price', 
+        'year_price',
         'total_rooms'
     ]
     
@@ -134,7 +135,8 @@ class ListingListCreateView(generics.ListCreateAPIView):
     
     # Add ordering options
     ordering_fields = [
-        'price',
+        'first_price', 
+        'year_price',
         'created_at',
         'updated_at',
         'total_rooms'
@@ -197,7 +199,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
                 'name': 'ordering',
                 'in': 'query',
                 'required': False,
-                'description': 'Order by field (price, created_at, -price, -created_at, etc.)',
+                'description': 'Order by field (first_price, year_price, created_at, -first_price, -year_price, -created_at, etc.)',
                 'schema': {'type': 'string'}
             },
             {
@@ -290,7 +292,6 @@ class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
     )
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
-    queryset = Listing.objects.all()
     serializer_class = ListingSerializer
     permission_classes = [IsAgentOrReadOnly]
 
