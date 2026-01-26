@@ -164,7 +164,7 @@ if DEBUG:
     # settings.py
     EMAIL_BACKEND = 'core.email_backends.SendGridBackend'
     SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
-    DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'
+    DEFAULT_FROM_EMAIL = 'bookit.office@gmail.com'
     EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='apikey')  
     EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
     # EMAIL_PORT = env.int('EMAIL_PORT', default=587)
@@ -176,7 +176,7 @@ else:
     # SMTP backend for production
     EMAIL_BACKEND = 'core.email_backends.SendGridBackend'
     SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
-    DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'
+    DEFAULT_FROM_EMAIL = 'bookit.office@gmail.com'
     EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='apikey')  
     EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
     SITE_DOMAIN = env('SITE_DOMAIN', default='https://yourdomain.com')
