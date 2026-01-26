@@ -327,8 +327,8 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 # Email template settings
 ACCOUNT_TEMPLATE_EXTENSION = 'html'  # Use .html templates
 
-DEFAULT_FROM_EMAIL = 'danimpulse500@gmail.com'  # Your verified sender
-SERVER_EMAIL = 'danimpulse500@gmail.com' 
+DEFAULT_FROM_EMAIL = 'bookit.office@gmail.com'  # Your verified sender
+SERVER_EMAIL = 'bookit.office@gmail.com' 
 
 CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins
 CORS_ALLOW_CREDENTIALS = True
